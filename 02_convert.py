@@ -17,6 +17,9 @@ import sys
 ########################################################################
 # import additional python-library
 ########################################################################
+from tensorflow import keras
+from tensorflow.python.ops import math_ops
+
 import common as com
 import keras_model
 import tensorflow as tf
@@ -61,6 +64,37 @@ if __name__ == "__main__":
             com.logger.error("{} model not found ".format(machine_type))
             sys.exit(-1)
         model = keras_model.load_model(model_file)
+        model.summary()
+
+        print("============== FOLDING BATCH NORMALIZATION LAYERS ==============")
+        # folding BatchNormalization layers into Dense layers
+        # based on https://github.com/tensorflow/model-optimization/blob/master/tensorflow_model_optimization/python/core/quantization/keras/layers/conv_batchnorm.py
+        h = model.input
+        skip = False
+        for i in range(len(model.layers)):
+            if skip:
+                skip = False
+                continue
+            if isinstance(model.layers[i], keras.layers.Dense):
+                if i < len(model.layers)-1 and isinstance(model.layers[i+1], keras.layers.BatchNormalization):
+                    kernel, bias = model.layers[i].get_weights()
+                    gamma, beta, moving_mean, moving_variance = model.layers[i+1].get_weights()
+
+                    folded_kernel_multiplier = gamma * math_ops.rsqrt(
+                        moving_variance + model.layers[i+1].epsilon)
+                    folded_kernel = math_ops.mul(
+                        folded_kernel_multiplier, kernel, name='folded_kernel')
+
+                    folded_bias = math_ops.subtract(
+                        beta,
+                        moving_mean * folded_kernel_multiplier,
+                        name='folded_bias')
+
+                    model.layers[i].set_weights([folded_kernel, folded_bias])
+                    skip = True
+
+            h = model.layers[i](h)
+        model = keras.Model(inputs=model.input, outputs=h)
         model.summary()
 
         # Convert the model to tflite
