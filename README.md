@@ -1,18 +1,47 @@
-# dcase2020_task2_baseline
-This is a baseline system for **DCASE 2020 Challenge Task 2 "Unsupervised Detection of Anomalous Sounds for Machine Condition Monitoring"**. 
+# TinyMLPerf anomaly detection reference model
 
+This is the TinyMLPerf anomaly reference model, based on the baseline system for the
+DCASE 2020 Challenge Task 2 "Unsupervised Detection of Anomalous Sounds for Machine Condition Monitoring". 
+
+The description of the original challenge is available at:
 http://dcase.community/challenge2020/task-unsupervised-detection-of-anomalous-sounds
 
+The original code was extended with TFLite conversion and verification.
+
+Besides the training scripts, the repository also contains the pre-trained version of the reference model
+and its converted versions.
+
+## Quick start
+
+Run the following commands to go through the whole training and validation process
+
+``` Bash
+# Prepare Python venv (Python 3.6+ required)
+./prepare.sh
+
+# Download training data from Zenodo
+./download.sh
+
+# Train, convert, and test the model
+./train_and_convert.sh
+```
+
 ## Description
-The baseline system consists of two main scripts:
+The baseline system consists of four main scripts:
 - `00_train.py`
   - This script trains models for each Machine Type by using the directory **dev_data/<Machine_Type>/train/** or **eval_data/<Machine_Type>/train/**.
 - `01_test.py`
   - This script makes csv files for each Machine ID including the anomaly scores for each wav file in the directory **dev_data/<Machine_Type>/test/** or **eval_data/<Machine_Type>/test/**.
   - The csv files will be stored in the directory **result/**.
   - If the mode is "development", it also makes the csv files including the AUC and pAUC for each Machine ID. 
+- `02_convert.py`
+  - This script converts the previously generated models to TFLite and quantized TFLite models. For the quantization ,it uses the data in **dev_data/<Machine_Type>/train/**.
+- `03_tflite_test.py`
+  - This script makes csv files for each Machine ID and each TFLite model version, similar to `01_test.sh`
 
-## Usage
+## Detailed Usage
+
+Either use the scripts described in **Quick Start** instructions, or follow the steps below.  
 
 ### 1. Clone repository
 Clone this repository from Github.
@@ -202,24 +231,15 @@ You can submit the csv files for the challenge.
 From the submitted csv files, we will calculate the AUCs, pAUCs, and your ranking.
 
 ## Dependency
-We develop the source code on Ubuntu 16.04 LTS and 18.04 LTS.
+The original source code was developed on Ubuntu 16.04 LTS and 18.04 LTS. The TinyMLPerf extension was developed on **OS X**.
 In addition, we checked performing on **Ubuntu 16.04 LTS**, **18.04 LTS**, **Cent OS 7**, and **Windows 10**.
 
 ### Software packages
-- p7zip-full
-- Python == 3.6.5
+- p7zip-full, or other zip tool
+- Python == 3.6.5, or newer
 - FFmpeg
 
 ### Python packages
-- Keras                         == 2.1.6
-- Keras-Applications            == 1.0.8
-- Keras-Preprocessing           == 1.0.5
-- matplotlib                    == 3.0.3
-- numpy                         == 1.16.0
-- PyYAML                        == 5.1
-- scikit-learn                  == 0.20.2
-- librosa                       == 0.6.0
-- audioread                     == 2.1.5 (more)
-- setuptools                    == 41.0.0
-- tensorflow                    == 1.15.0
-- tqdm                          == 4.23.4
+
+For an up to date list, please refer to `requirements.txt`
+
